@@ -82,27 +82,53 @@ export function createApiRouter(storage: Storage, pool: Pool) {
   router.post('/v1/chat/completions', handleCompletion)
 
   router.get('/v1/models', async (c) => {
-    const PROVIDER_MODELS: Record<string, string[]> = {
-      claude:   ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229', 'claude-sonnet-4-5'],
-      gemini:   ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'],
-      chatgpt:  ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+    const STATIC_MODELS: Record<string, string[]> = {
+      claude:   ['claude-opus-4-5', 'claude-sonnet-4-5', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'],
+      chatgpt:  ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'o1', 'o1-mini'],
       deepseek: ['deepseek-chat', 'deepseek-reasoner'],
       kimi:     ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
     }
 
     const accounts = await storage.readAccounts()
-    const activeProviders = new Set(
-      accounts.filter(a => a.status === 'active' || a.status === 'rate_limited').map(a => a.provider)
-    )
+    const activeAccounts = accounts.filter(a => a.status === 'active' || a.status === 'rate_limited')
+    const activeProviders = new Set(activeAccounts.map(a => a.provider))
 
-    const models = [...activeProviders].flatMap(p => PROVIDER_MODELS[p] ?? []).map(id => ({
+    const modelIds: string[] = []
+
+    // Gemini: fetch live model list from API using first active account
+    if (activeProviders.has('gemini')) {
+      const geminiAccount = activeAccounts.find(a => a.provider === 'gemini')
+      if (geminiAccount) {
+        try {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiAccount.credential}&pageSize=50`
+          )
+          if (res.ok) {
+            const data = await res.json() as { models: Array<{ name: string; supportedGenerationMethods?: string[] }> }
+            const geminiModels = (data.models ?? [])
+              .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+              .map(m => m.name.replace('models/', ''))
+              .filter(id => !id.includes('tts') && !id.includes('image') && !id.startsWith('gemma'))
+            modelIds.push(...geminiModels)
+          }
+        } catch { /* fall through to empty */ }
+      }
+    }
+
+    // Other providers: use static list
+    for (const provider of activeProviders) {
+      if (provider === 'gemini') continue
+      modelIds.push(...(STATIC_MODELS[provider] ?? []))
+    }
+
+    const data = modelIds.map(id => ({
       id,
       object: 'model',
       created: 1700000000,
       owned_by: 'routme',
     }))
 
-    return c.json({ object: 'list', data: models })
+    return c.json({ object: 'list', data })
   })
 
   return router
