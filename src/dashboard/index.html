@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoutMe Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #111; }
+    nav { background: #000; color: #fff; padding: 12px 24px; display: flex; gap: 24px; align-items: center; }
+    nav strong { margin-right: 8px; }
+    nav a { color: #fff; text-decoration: none; opacity: 0.6; font-size: 14px; }
+    nav a.active, nav a:hover { opacity: 1; }
+    main { padding: 24px; max-width: 960px; margin: 0 auto; }
+    .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    h3 { font-size: 15px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #f0f0f0; }
+    th { font-size: 11px; text-transform: uppercase; color: #999; letter-spacing: .05em; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 500; }
+    .badge.active    { background: #d1fae5; color: #065f46; }
+    .badge.rate_limited { background: #fef3c7; color: #92400e; }
+    .badge.expired   { background: #fee2e2; color: #991b1b; }
+    .badge.disabled  { background: #f3f4f6; color: #6b7280; }
+    .badge.success   { background: #d1fae5; color: #065f46; }
+    .badge.error     { background: #fee2e2; color: #991b1b; }
+    button { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .btn-primary { background: #000; color: #fff; }
+    .btn-sm { padding: 3px 8px; font-size: 12px; background: #f3f4f6; }
+    .btn-danger { background: #fee2e2; color: #991b1b; }
+    input, select { padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px; width: 100%; }
+    .form-row { display: flex; gap: 12px; margin-bottom: 10px; }
+    .form-row > * { flex: 1; }
+    .hint { font-size: 12px; color: #6b7280; margin-top: 6px; line-height: 1.5; }
+    .empty { text-align: center; color: #9ca3af; padding: 32px 0; font-size: 14px; }
+    [data-page] { display: none; }
+    [data-page].active { display: block; }
+  </style>
+</head>
+<body>
+<nav>
+  <strong>RoutMe</strong>
+  <a href="#" data-nav="accounts" class="active">Accounts</a>
+  <a href="#" data-nav="status">Status</a>
+  <a href="#" data-nav="logs">Logs</a>
+</nav>
+<main>
+  <div data-page="accounts" class="active">
+    <div class="card">
+      <h3>Add Account</h3>
+      <div class="form-row">
+        <select id="add-provider">
+          <option value="claude">Claude.ai</option>
+          <option value="gemini">Gemini (Google AI Studio)</option>
+          <option value="chatgpt">ChatGPT</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="kimi">Kimi</option>
+        </select>
+        <input id="add-label" placeholder="Label (e.g. Claude Account #1)" />
+      </div>
+      <div style="margin-bottom:14px">
+        <input id="add-credential" placeholder="Paste cookie / API key / token here" />
+        <p id="add-hint" class="hint"></p>
+      </div>
+      <button class="btn-primary" onclick="addAccount()">Add Account</button>
+    </div>
+    <div class="card">
+      <h3>Accounts</h3>
+      <table>
+        <thead><tr><th>Provider</th><th>Label</th><th>Status</th><th>Last Used</th><th>Actions</th></tr></thead>
+        <tbody id="accounts-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div data-page="status">
+    <div class="card">
+      <h3>Live Status</h3>
+      <table>
+        <thead><tr><th>Provider</th><th>Label</th><th>Status</th><th>Rate Limited Until</th><th>Last Used</th></tr></thead>
+        <tbody id="status-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div data-page="logs">
+    <div class="card">
+      <h3>Recent Requests (last 100)</h3>
+      <table>
+        <thead><tr><th>Time</th><th>Provider</th><th>Account</th><th>Result</th><th>Latency</th></tr></thead>
+        <tbody id="logs-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<script src="/dashboard/app.js"></script>
+</body>
+</html>
