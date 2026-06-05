@@ -1,13 +1,19 @@
 import type { Provider, NormalizedRequest, Account } from '../types.js'
 import { parseSSEStream } from '../utils/sse.js'
+import { browserHeaders } from '../utils/headers.js'
+
+const ORIGIN = 'https://kimi.moonshot.cn'
 
 export class KimiProvider implements Provider {
   readonly id = 'kimi' as const
 
   private async createChat(credential: string): Promise<string> {
-    const res = await fetch('https://kimi.moonshot.cn/api/chat', {
+    const res = await fetch(`${ORIGIN}/api/chat`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${credential}`, 'Content-Type': 'application/json' },
+      headers: browserHeaders(ORIGIN, {
+        'Authorization': `Bearer ${credential}`,
+        'Content-Type': 'application/json',
+      }),
       body: JSON.stringify({ name: 'RoutMe', is_example: false }),
     })
     if (!res.ok) throw Object.assign(new Error('kimi chat create failed'), { status: res.status })
@@ -23,12 +29,18 @@ export class KimiProvider implements Provider {
       content: typeof m.content === 'string' ? m.content : m.content.filter(b => b.type === 'text').map(b => (b as any).text).join(''),
     }))
 
-    const res = await fetch(`https://kimi.moonshot.cn/api/chat/${chatId}/completion/stream`, {
+    const res = await fetch(`${ORIGIN}/api/chat/${chatId}/completion/stream`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${account.credential}`, 'Content-Type': 'application/json' },
+      headers: browserHeaders(ORIGIN, {
+        'Authorization': `Bearer ${account.credential}`,
+        'Content-Type': 'application/json',
+      }),
       body: JSON.stringify({ messages, refs: [], user_search: false }),
     })
-    if (!res.ok) throw Object.assign(new Error('kimi error'), { status: res.status })
+    if (!res.ok) {
+      const errBody = await res.text()
+      throw Object.assign(new Error('kimi error'), { status: res.status, body: errBody })
+    }
     if (!res.body) throw new Error('no response body')
 
     yield* parseSSEStream(res.body, (data) => {

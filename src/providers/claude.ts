@@ -1,12 +1,23 @@
 import type { Provider, NormalizedRequest, Account, Message } from '../types.js'
 import { parseSSEStream } from '../utils/sse.js'
+import { browserHeaders } from '../utils/headers.js'
+
+const ORIGIN = 'https://claude.ai'
+
+const claudeHeaders = (credential: string, extra?: Record<string, string>) => ({
+  ...browserHeaders(ORIGIN, {
+    'Cookie': `sessionKey=${credential}`,
+    'anthropic-client-version': 'claude.ai/web',
+    ...extra,
+  }),
+})
 
 export class ClaudeProvider implements Provider {
   readonly id = 'claude' as const
 
   private async getOrgId(credential: string): Promise<string> {
-    const res = await fetch('https://claude.ai/api/organizations', {
-      headers: { Cookie: `sessionKey=${credential}`, 'User-Agent': 'Mozilla/5.0' },
+    const res = await fetch(`${ORIGIN}/api/organizations`, {
+      headers: claudeHeaders(credential, { Accept: 'application/json' }),
     })
     if (!res.ok) throw Object.assign(new Error('claude org fetch failed'), { status: res.status })
     const orgs = await res.json() as Array<{ uuid: string }>
@@ -14,13 +25,9 @@ export class ClaudeProvider implements Provider {
   }
 
   private async createConversation(orgId: string, credential: string): Promise<string> {
-    const res = await fetch(`https://claude.ai/api/organizations/${orgId}/chat_conversations`, {
+    const res = await fetch(`${ORIGIN}/api/organizations/${orgId}/chat_conversations`, {
       method: 'POST',
-      headers: {
-        Cookie: `sessionKey=${credential}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0',
-      },
+      headers: claudeHeaders(credential, { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ name: '' }),
     })
     if (!res.ok) throw Object.assign(new Error('claude conv create failed'), { status: res.status })
@@ -43,19 +50,20 @@ export class ClaudeProvider implements Provider {
     ).join('')
 
     const res = await fetch(
-      `https://claude.ai/api/organizations/${orgId}/chat_conversations/${convId}/completion`,
+      `${ORIGIN}/api/organizations/${orgId}/chat_conversations/${convId}/completion`,
       {
         method: 'POST',
-        headers: {
-          Cookie: `sessionKey=${account.credential}`,
+        headers: claudeHeaders(account.credential, {
           'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-          'User-Agent': 'Mozilla/5.0',
-        },
+          'Accept': 'text/event-stream',
+        }),
         body: JSON.stringify({ prompt, timezone: 'UTC', attachments: [], files: [] }),
       }
     )
-    if (!res.ok) throw Object.assign(new Error('claude completion failed'), { status: res.status })
+    if (!res.ok) {
+      const errBody = await res.text()
+      throw Object.assign(new Error('claude error'), { status: res.status, body: errBody })
+    }
     if (!res.body) throw new Error('no response body')
 
     yield* parseSSEStream(res.body, (data) => {

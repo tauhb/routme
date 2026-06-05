@@ -1,5 +1,8 @@
 import type { Provider, NormalizedRequest, Account } from '../types.js'
 import { randomUUID } from 'crypto'
+import { browserHeaders } from '../utils/headers.js'
+
+const ORIGIN = 'https://chatgpt.com'
 
 export class ChatGPTProvider implements Provider {
   readonly id = 'chatgpt' as const
@@ -14,13 +17,14 @@ export class ChatGPTProvider implements Provider {
       })),
     ]
 
-    const res = await fetch('https://chatgpt.com/backend-api/conversation', {
+    const res = await fetch(`${ORIGIN}/backend-api/conversation`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${account.credential}`,
+      headers: browserHeaders(ORIGIN, {
+        'Authorization': `Bearer ${account.credential}`,
         'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-      },
+        'Accept': 'text/event-stream',
+        'OAI-Language': 'en-US',
+      }),
       body: JSON.stringify({
         action: 'next',
         messages,
@@ -30,7 +34,10 @@ export class ChatGPTProvider implements Provider {
         history_and_training_disabled: false,
       }),
     })
-    if (!res.ok) throw Object.assign(new Error('chatgpt error'), { status: res.status })
+    if (!res.ok) {
+      const errBody = await res.text()
+      throw Object.assign(new Error('chatgpt error'), { status: res.status, body: errBody })
+    }
     if (!res.body) throw new Error('no response body')
 
     let prevLength = 0
