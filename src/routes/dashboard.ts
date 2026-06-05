@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto'
 import type { Storage } from '../storage.js'
 import type { Account, ProviderId } from '../types.js'
 import { config } from '../config.js'
+import { readKeys, createKey, updateKey, deleteKey, type ApiKey } from '../keys.js'
 
 const dashboardDir = resolve(process.cwd(), 'src/dashboard')
 
@@ -107,6 +108,34 @@ export function createDashboardRouter(storage: Storage) {
   router.get('/api/logs', async (c) => {
     const logs = await storage.readLogs()
     return c.json([...logs].reverse())
+  })
+
+  // Key management
+  router.get('/api/keys', async (c) => {
+    const keys = await readKeys()
+    return c.json(keys.map(k => ({ ...k, key: k.key })))
+  })
+
+  router.post('/api/keys', async (c) => {
+    const body = await c.req.json() as { label?: string }
+    if (!body.label?.trim()) return c.json({ error: 'label is required' }, 400)
+    const key = await createKey(body.label.trim())
+    return c.json(key, 201)
+  })
+
+  router.patch('/api/keys/:id', async (c) => {
+    const { id } = c.req.param()
+    const body = await c.req.json() as Partial<Pick<ApiKey, 'label' | 'enabled'>>
+    const updated = await updateKey(id, body)
+    if (!updated) return c.json({ error: 'Not found' }, 404)
+    return c.json(updated)
+  })
+
+  router.delete('/api/keys/:id', async (c) => {
+    const { id } = c.req.param()
+    const ok = await deleteKey(id)
+    if (!ok) return c.json({ error: 'Not found' }, 404)
+    return c.json({ ok: true })
   })
 
   return router

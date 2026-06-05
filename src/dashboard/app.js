@@ -22,6 +22,7 @@ document.querySelectorAll('[data-nav]').forEach(link => {
     if (page === 'accounts') loadAccounts()
     if (page === 'status')   loadStatus()
     if (page === 'logs')     loadLogs()
+    if (page === 'keys')     loadKeys()
   })
 })
 
@@ -113,3 +114,57 @@ async function loadLogs() {
 }
 
 loadAccounts()
+
+// Keys tab
+async function loadKeys() {
+  const keys = await api('/api/keys')
+  const tbody = document.getElementById('keys-tbody')
+  tbody.innerHTML = keys.length === 0
+    ? '<tr><td colspan="5" class="empty">No keys yet. Generate one above.</td></tr>'
+    : keys.map(k => `<tr>
+        <td>${k.label}</td>
+        <td><code style="font-size:12px;background:#f3f4f6;padding:2px 6px;border-radius:4px">${k.key}</code>
+          <button class="btn-sm" onclick="copyKey('${k.key}')" style="margin-left:4px">Copy</button>
+        </td>
+        <td><span class="badge ${k.enabled ? 'active' : 'disabled'}">${k.enabled ? 'active' : 'disabled'}</span></td>
+        <td>${fmt(k.createdAt)}</td>
+        <td style="display:flex;gap:6px">
+          <button class="btn-sm" onclick="toggleKey('${k.id}',${!k.enabled})">${k.enabled ? 'Disable' : 'Enable'}</button>
+          <button class="btn-sm btn-danger" onclick="deleteKey2('${k.id}')">Delete</button>
+        </td>
+      </tr>`).join('')
+}
+
+async function generateKey() {
+  const label = document.getElementById('key-label').value.trim()
+  if (!label) return alert('Enter a label for the key')
+  try {
+    const key = await api('/api/keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label }),
+    })
+    document.getElementById('key-label').value = ''
+    await loadKeys()
+    alert(`Key generated!\n\n${key.key}\n\nCopy it now — this is the only time it's shown in full.`)
+  } catch (e) { alert(e.message) }
+}
+
+function copyKey(key) {
+  navigator.clipboard.writeText(key).then(() => alert('Copied!')).catch(() => alert('Copy failed — select manually'))
+}
+
+async function toggleKey(id, enabled) {
+  await api(`/api/keys/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  })
+  await loadKeys()
+}
+
+async function deleteKey2(id) {
+  if (!confirm('Delete this API key? Clients using it will lose access.')) return
+  await api(`/api/keys/${id}`, { method: 'DELETE' })
+  await loadKeys()
+}

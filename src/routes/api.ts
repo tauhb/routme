@@ -6,6 +6,7 @@ import type { ProviderId } from '../types.js'
 import { detectFormat, normalizeRequest, formatAnthropicChunk, formatAnthropicDone, formatOpenAIChunk, formatOpenAIDone } from '../translator.js'
 import { getProvider } from '../providers/index.js'
 import { config } from '../config.js'
+import { isValidClientKey } from '../keys.js'
 
 const DEFAULT_PRIORITY: ProviderId[] = ['claude', 'gemini', 'deepseek', 'chatgpt', 'kimi']
 
@@ -14,8 +15,9 @@ export function createApiRouter(storage: Storage, pool: Pool) {
 
   router.use('/v1/*', async (c, next) => {
     const key = (c.req.header('Authorization') ?? '').replace('Bearer ', '').trim()
-    if (key !== config.apiKey) return c.json({ error: 'Unauthorized' }, 401)
-    await next()
+    if (key === config.apiKey) { await next(); return }
+    if (await isValidClientKey(key)) { await next(); return }
+    return c.json({ error: 'Unauthorized' }, 401)
   })
 
   async function handleCompletion(c: any) {

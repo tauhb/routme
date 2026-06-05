@@ -43,6 +43,7 @@
   <a href="#" data-nav="accounts" class="active">Accounts</a>
   <a href="#" data-nav="status">Status</a>
   <a href="#" data-nav="logs">Logs</a>
+  <a href="#" data-nav="keys">API Keys</a>
 </nav>
 <main>
   <div data-page="accounts" class="active">
@@ -89,6 +90,24 @@
       <table>
         <thead><tr><th>Time</th><th>Provider</th><th>Account</th><th>Result</th><th>Latency</th></tr></thead>
         <tbody id="logs-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div data-page="keys">
+    <div class="card">
+      <h3>Generate API Key</h3>
+      <div class="form-row">
+        <input id="key-label" placeholder="Label (e.g. Customer Name, Cursor Account)" />
+        <button class="btn-primary" onclick="generateKey()" style="flex:0;white-space:nowrap">Generate Key</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>API Keys</h3>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:12px">Use these keys in Claude Code, Cursor, Cline, etc. The key is only shown once — copy it now.</p>
+      <table>
+        <thead><tr><th>Label</th><th>Key</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody id="keys-tbody"></tbody>
       </table>
     </div>
   </div>
