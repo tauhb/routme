@@ -1,0 +1,14 @@
+services:
+  routme:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=3000
+      - API_KEY=${API_KEY:-change-me}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-admin}
+      - RATE_LIMIT_COOLDOWN=${RATE_LIMIT_COOLDOWN:-30}
+      - DATA_DIR=/app/data
+    restart: unless-stopped
