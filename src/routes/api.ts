@@ -12,7 +12,7 @@ const DEFAULT_PRIORITY: ProviderId[] = ['claude', 'gemini', 'deepseek', 'chatgpt
 export function createApiRouter(storage: Storage, pool: Pool) {
   const router = new Hono()
 
-  router.use('*', async (c, next) => {
+  router.use('/v1/*', async (c, next) => {
     const key = (c.req.header('Authorization') ?? '').replace('Bearer ', '').trim()
     if (key !== config.apiKey) return c.json({ error: 'Unauthorized' }, 401)
     await next()
