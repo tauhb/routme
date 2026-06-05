@@ -81,5 +81,29 @@ export function createApiRouter(storage: Storage, pool: Pool) {
   router.post('/v1/messages', handleCompletion)
   router.post('/v1/chat/completions', handleCompletion)
 
+  router.get('/v1/models', async (c) => {
+    const PROVIDER_MODELS: Record<string, string[]> = {
+      claude:   ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229', 'claude-sonnet-4-5'],
+      gemini:   ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'],
+      chatgpt:  ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+      deepseek: ['deepseek-chat', 'deepseek-reasoner'],
+      kimi:     ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
+    }
+
+    const accounts = await storage.readAccounts()
+    const activeProviders = new Set(
+      accounts.filter(a => a.status === 'active' || a.status === 'rate_limited').map(a => a.provider)
+    )
+
+    const models = [...activeProviders].flatMap(p => PROVIDER_MODELS[p] ?? []).map(id => ({
+      id,
+      object: 'model',
+      created: 1700000000,
+      owned_by: 'routme',
+    }))
+
+    return c.json({ object: 'list', data: models })
+  })
+
   return router
 }
