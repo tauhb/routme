@@ -100,6 +100,16 @@ export function createDashboardRouter(storage: Storage) {
 
   router.get('/api/status', async (c) => {
     const accounts = await storage.readAccounts()
+    const now = Date.now()
+    let changed = false
+    for (const a of accounts) {
+      if (a.status === 'rate_limited' && a.rateLimitedUntil && new Date(a.rateLimitedUntil).getTime() <= now) {
+        a.status = 'active'
+        a.rateLimitedUntil = null
+        changed = true
+      }
+    }
+    if (changed) await storage.writeAccounts(accounts)
     return c.json(accounts.map(({ id, provider, label, status, lastUsed, rateLimitedUntil }) =>
       ({ id, provider, label, status, lastUsed, rateLimitedUntil })
     ))
