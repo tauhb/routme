@@ -33,7 +33,10 @@ export class GeminiProvider implements Provider {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    if (!res.ok) throw Object.assign(new Error('gemini error'), { status: res.status })
+    if (!res.ok) {
+      const errBody = await res.text()
+      throw Object.assign(new Error('gemini error'), { status: res.status, body: errBody })
+    }
     if (!res.body) throw new Error('no response body')
 
     yield* parseSSEStream(res.body, (data) => {
@@ -46,4 +49,20 @@ export class GeminiProvider implements Provider {
 
   isQuotaError(status: number): boolean { return status === 429 }
   isAuthError(status: number): boolean { return status === 401 || status === 403 }
+
+  quotaCooldown(status: number, body: string): number {
+    if (status !== 429) return 30
+    try {
+      const parsed = JSON.parse(body)
+      const message: string = parsed?.error?.message ?? ''
+      // "limit: 0" → daily quota exhausted → cooldown until next midnight UTC
+      if (message.includes('limit: 0')) {
+        const midnight = new Date()
+        midnight.setUTCHours(24, 0, 0, 0)
+        return Math.ceil((midnight.getTime() - Date.now()) / 60_000)
+      }
+    } catch { /* ignore */ }
+    // Per-minute limit → wait 2 minutes
+    return 2
+  }
 }

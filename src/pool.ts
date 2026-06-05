@@ -33,12 +33,13 @@ export function createPool(storage: Storage, cooldownMinutes: number) {
     return eligible[idx]
   }
 
-  async function markRateLimited(accountId: string): Promise<void> {
+  async function markRateLimited(accountId: string, overrideMinutes?: number): Promise<void> {
+    const minutes = overrideMinutes ?? cooldownMinutes
     const accounts = await storage.readAccounts()
     const account = accounts.find(a => a.id === accountId)
     if (!account) return
     account.status = 'rate_limited'
-    account.rateLimitedUntil = new Date(Date.now() + cooldownMinutes * 60_000).toISOString()
+    account.rateLimitedUntil = new Date(Date.now() + minutes * 60_000).toISOString()
     await storage.writeAccounts(accounts)
   }
 

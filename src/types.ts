@@ -38,6 +38,7 @@ export interface Provider {
   sendMessage(request: NormalizedRequest, account: Account): AsyncIterable<string>
   isQuotaError(status: number, body: string): boolean
   isAuthError(status: number, body: string): boolean
+  quotaCooldown?(status: number, body: string): number  // minutes; if absent uses global config
 }
 
 export interface RequestLog {

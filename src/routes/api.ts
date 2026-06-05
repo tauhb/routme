@@ -50,8 +50,12 @@ export function createApiRouter(storage: Storage, pool: Pool) {
               await storage.appendLog({ id: crypto.randomUUID(), timestamp: new Date().toISOString(), provider: providerId, accountId: account.id, accountLabel: account.label, status: 'success', latencyMs: Date.now() - start })
             } catch (err: any) {
               const status = err?.status ?? 500
-              if (provider.isQuotaError(status, '')) await pool.markRateLimited(account.id)
-              if (provider.isAuthError(status, '')) await pool.markExpired(account.id)
+              const body = err?.body ?? ''
+              if (provider.isQuotaError(status, body)) {
+                const minutes = provider.quotaCooldown?.(status, body) ?? config.rateLimitCooldown
+                await pool.markRateLimited(account.id, minutes)
+              }
+              if (provider.isAuthError(status, body)) await pool.markExpired(account.id)
             }
           })
         }
@@ -68,8 +72,13 @@ export function createApiRouter(storage: Storage, pool: Pool) {
 
       } catch (err: any) {
         const status = err?.status ?? 500
-        if (provider.isQuotaError(status, '')) { await pool.markRateLimited(account.id); continue }
-        if (provider.isAuthError(status, '')) { await pool.markExpired(account.id); continue }
+        const body = err?.body ?? ''
+        if (provider.isQuotaError(status, body)) {
+          const minutes = provider.quotaCooldown?.(status, body) ?? config.rateLimitCooldown
+          await pool.markRateLimited(account.id, minutes)
+          continue
+        }
+        if (provider.isAuthError(status, body)) { await pool.markExpired(account.id); continue }
         if (status >= 500) continue
         return c.json({ error: err.message }, status)
       }
