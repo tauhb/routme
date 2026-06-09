@@ -96,6 +96,33 @@
 
   <div data-page="keys">
     <div class="card">
+      <h3>Connection Info</h3>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:12px">Paste the Base URL and an API key below into Cursor, Claude Code, Cline, Open WebUI, etc.</p>
+      <table style="font-size:14px">
+        <tr>
+          <td style="width:140px;color:#6b7280;padding:8px 0">Base URL</td>
+          <td>
+            <code id="base-url" style="background:#f3f4f6;padding:4px 10px;border-radius:4px;font-size:13px"></code>
+            <button class="btn-sm" onclick="copyText(document.getElementById('base-url').textContent)" style="margin-left:8px">Copy</button>
+          </td>
+        </tr>
+        <tr>
+          <td style="color:#6b7280;padding:8px 0">Chat endpoint</td>
+          <td>
+            <code id="chat-url" style="background:#f3f4f6;padding:4px 10px;border-radius:4px;font-size:13px"></code>
+            <button class="btn-sm" onclick="copyText(document.getElementById('chat-url').textContent)" style="margin-left:8px">Copy</button>
+          </td>
+        </tr>
+        <tr>
+          <td style="color:#6b7280;padding:8px 0">Models endpoint</td>
+          <td>
+            <code id="models-url" style="background:#f3f4f6;padding:4px 10px;border-radius:4px;font-size:13px"></code>
+            <button class="btn-sm" onclick="copyText(document.getElementById('models-url').textContent)" style="margin-left:8px">Copy</button>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div class="card">
       <h3>Generate API Key</h3>
       <div class="form-row">
         <input id="key-label" placeholder="Label (e.g. Customer Name, Cursor Account)" />

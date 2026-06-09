@@ -154,6 +154,18 @@ function copyKey(key) {
   navigator.clipboard.writeText(key).then(() => alert('Copied!')).catch(() => alert('Copy failed — select manually'))
 }
 
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => alert('Copied!')).catch(() => alert('Copy failed — select manually'))
+}
+
+function initConnectionInfo() {
+  const base = window.location.origin
+  document.getElementById('base-url').textContent = base
+  document.getElementById('chat-url').textContent = base + '/v1/chat/completions'
+  document.getElementById('models-url').textContent = base + '/v1/models'
+}
+initConnectionInfo()
+
 async function toggleKey(id, enabled) {
   await api(`/api/keys/${id}`, {
     method: 'PATCH',
