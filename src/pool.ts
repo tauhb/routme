@@ -4,7 +4,7 @@ import type { Account, ProviderId } from './types.js'
 export function createPool(storage: Storage, cooldownMinutes: number) {
   const counters = new Map<string, number>()
 
-  async function pick(providerId: ProviderId): Promise<Account | null> {
+  async function pick(providerId: ProviderId, excludeIds?: Set<string>): Promise<Account | null> {
     const accounts = await storage.readAccounts()
     const now = Date.now()
     const recovered: Account[] = []
@@ -12,6 +12,7 @@ export function createPool(storage: Storage, cooldownMinutes: number) {
 
     for (const a of accounts) {
       if (a.provider !== providerId) continue
+      if (excludeIds?.has(a.id)) continue
       if (a.status === 'disabled' || a.status === 'expired') continue
       if (a.status === 'rate_limited') {
         if (a.rateLimitedUntil && new Date(a.rateLimitedUntil).getTime() <= now) {

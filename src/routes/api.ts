@@ -29,10 +29,15 @@ export function createApiRouter(storage: Storage, pool: Pool) {
     const start = Date.now()
 
     for (const providerId of DEFAULT_PRIORITY) {
-      const account = await pool.pick(providerId)
-      if (!account) continue
       const provider = getProvider(providerId)
       if (!provider) continue
+
+      // Retry all available accounts of this provider before moving on
+      const triedIds = new Set<string>()
+      while (true) {
+        const account = await pool.pick(providerId, triedIds)
+        if (!account) break
+        triedIds.add(account.id)
 
       try {
         const providerStream = provider.sendMessage(normalized, account)
@@ -82,6 +87,7 @@ export function createApiRouter(storage: Storage, pool: Pool) {
         if (status >= 500) continue
         return c.json({ error: err.message }, status)
       }
+      } // end while
     }
 
     return c.json({ error: 'No available accounts. Add accounts in the RoutMe dashboard.' }, 503)
