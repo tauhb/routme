@@ -13,13 +13,15 @@ export function createDashboardRouter(storage: Storage) {
   const router = new Hono()
 
   // Session auth for /dashboard pages
-  router.use('/dashboard*', async (c, next) => {
+  const dashboardAuth = async (c: any, next: any) => {
     const cookie = c.req.header('Cookie') ?? ''
     if (!cookie.includes(`routme_session=${config.dashboardPassword}`) && c.req.path !== '/dashboard/login') {
       return c.redirect('/dashboard/login')
     }
     await next()
-  })
+  }
+  router.use('/dashboard', dashboardAuth)
+  router.use('/dashboard/*', dashboardAuth)
 
   router.get('/dashboard/login', (c) => c.html(`<!DOCTYPE html>
 <html><head><title>RoutMe</title></head>
