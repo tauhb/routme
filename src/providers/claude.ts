@@ -4,9 +4,12 @@ import { browserHeaders } from '../utils/headers.js'
 
 const ORIGIN = 'https://claude.ai'
 
+const buildCookie = (credential: string) =>
+  credential.includes('sessionKey=') ? credential : `sessionKey=${credential}`
+
 const claudeHeaders = (credential: string, extra?: Record<string, string>) => ({
   ...browserHeaders(ORIGIN, {
-    'Cookie': `sessionKey=${credential}`,
+    'Cookie': buildCookie(credential),
     'anthropic-client-version': 'claude.ai/web',
     ...extra,
   }),

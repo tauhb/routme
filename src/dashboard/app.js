@@ -1,5 +1,5 @@
 const HINTS = {
-  claude:   'Open claude.ai → DevTools (F12) → Application → Cookies → copy the sessionKey value',
+  claude:   'Open claude.ai → DevTools (F12) → Network tab → click any /api/ request → Request Headers → find "cookie:" → copy the FULL cookie string (needed for Cloudflare bypass). On local deployment only the sessionKey value is needed.',
   gemini:   'Go to aistudio.google.com → Get API key → Create API key → copy it (starts with AIza...)',
   chatgpt:  'Open chatgpt.com → DevTools → Network → any request → copy Authorization header value (without "Bearer ")',
   deepseek: 'Go to platform.deepseek.com → API Keys → Create key → copy it (starts with sk-...)',
