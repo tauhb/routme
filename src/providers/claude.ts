@@ -45,9 +45,21 @@ export class ClaudeProvider implements Provider {
     const orgId = await this.getOrgId(account.credential)
     const convId = await this.createConversation(orgId, account.credential)
 
-    const prompt = request.messages.map(m =>
-      `\n\nHuman: ${this.extractText(m)}\n\nAssistant:`
-    ).join('')
+    const messages = request.messages.map(m => ({
+      role: m.role,
+      content: [{ type: 'text', text: this.extractText(m) }],
+    }))
+
+    const body: Record<string, unknown> = {
+      messages,
+      timezone: 'UTC',
+      attachments: [],
+      files: [],
+      rendering_mode: 'raw',
+    }
+    if (request.system) {
+      body.system = [{ type: 'text', text: request.system }]
+    }
 
     const res = await fetch(
       `${ORIGIN}/api/organizations/${orgId}/chat_conversations/${convId}/completion`,
@@ -57,7 +69,7 @@ export class ClaudeProvider implements Provider {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
         }),
-        body: JSON.stringify({ prompt, timezone: 'UTC', attachments: [], files: [] }),
+        body: JSON.stringify(body),
       }
     )
     if (!res.ok) {
@@ -78,5 +90,5 @@ export class ClaudeProvider implements Provider {
   }
 
   isQuotaError(status: number): boolean { return status === 429 }
-  isAuthError(status: number): boolean { return status === 401 || status === 403 }
+  isAuthError(status: number): boolean { return status === 401 || status === 403 || status === 404 }
 }
